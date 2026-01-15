@@ -1,51 +1,91 @@
-# Custom project from Hilla
+# Jocb — Hilla + Spring Boot 超實用剪貼板/圖片管理工具
 
-This project can be used as a starting point to create your own Hilla application with Spring Boot.
-It contains all the necessary configuration and some placeholder files to get you started.
+## 專案簡介
+Jocb 是一套基於 Java Spring Boot (後端) + Vaadin Hilla (全端 API 生成) + React (前端) 的現代化應用專案，提供「圖片上傳」和「文字剪貼板」管理功能。所有上傳圖片及文字暫存內容，僅存在記憶體中（未寫入硬碟或資料庫），重新啟動服務即會清除。適合用於臨時檔案暫存、跨平台剪貼板用途，或作為全端範例專案參考使用。支援主題深/淺色切換與多語系（可依需求擴充）。
 
-## Running the application
+---
 
-The project is a standard Maven project. To run it from the command line,
-type `mvnw` (Windows), or `./mvnw` (Mac & Linux), then open
-http://localhost:8080 in your browser.
+## 主要特色
+- 🖼️ 支援拖拉貼上或選取圖片上傳，並即時產生預覽與大圖 Dialog 顯示
+- 📋 可快速貼上、管理、儲存多段文字，自動同步、快取、複製、刪除
+- 🌒 內建「淺色/深色」主題，可隨時切換
+- 🌏 多語系架構，可快速切換語系（目前預設支援英文/繁中）
+- 🧩 Spring Boot + Vaadin Hilla 全端架構，後端與前端 TypeScript 型態全自動同步
 
-You can also import the project to your IDE of choice as you would with any
-Maven project.
+---
 
-## Deploying to Production
+## 安裝與啟動
+1. **快速啟動（需已安裝 JDK 25）**
+   - 使用 Spring Boot 內建插件啟動（支援自動重載）：
+     ```bash
+     ./mvnw spring-boot:run    # Mac/Linux
+     mvnw spring-boot:run      # Windows
+     ```
+   執行成功後，開啟瀏覽器前往 [http://localhost:8080](http://localhost:8080)
 
-To create a production build, call `mvnw clean package -Pproduction` (Windows),
-or `./mvnw clean package -Pproduction` (Mac & Linux).
-This will build a JAR file with all the dependencies and front-end resources,
-ready to be deployed. The file can be found in the `target` folder after the build completes.
+2. **專案打包（Production）**
+   - Windows：
+     ```bash
+     mvnw clean package -Dvaadin.force.production.build=true
+     ```
+   - Mac/Linux：
+     ```bash
+     ./mvnw clean package -Dvaadin.force.production.build=true
+     ```
+   完成後執行：
+   ```bash
+   java -jar target/jocb-1.0-SNAPSHOT.jar
+   ```
 
-Once the JAR file is built, you can run it using
-`java -jar target/myapp-1.0-SNAPSHOT.jar` (NOTE, replace
-`myapp-1.0-SNAPSHOT.jar` with the name of your jar).
+3. **IDE匯入**
+   - 直接以 IntelliJ IDEA / Eclipse / VSCode 匯入為 Maven 專案即可
 
-## Project structure
+---
 
-<table style="width:100%; text-align: left;">
-  <tr><th>Directory</th><th>Description</th></tr>
-  <tr><td><code>src/main/frontend/</code></td><td>Client-side source directory</td></tr>
-  <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;<code>index.html</code></td><td>HTML template</td></tr>
-  <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;<code>index.ts</code></td><td>Frontend 
-entrypoint, bootstraps a React application</td></tr>
-  <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;<code>routes.tsx</code></td><td>React Router routes definition</td></tr>
-  <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;<code>MainLayout.tsx</code></td><td>Main 
-layout component, contains the navigation menu, uses <a href="https://hilla.dev/docs/react/components/app-layout">
-App Layout</a></td></tr>
-  <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;<code>views/</code></td><td>UI view 
-components</td></tr>
-  <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;<code>themes/</code></td><td>Custom  
-CSS styles</td></tr>
-  <tr><td><code>src/main/java/&lt;groupId&gt;/</code></td><td>Server-side 
-source directory, contains the server-side Java views</td></tr>
-  <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;<code>Application.java</code></td><td>Server entry-point</td></tr>
-</table>
+## 專案結構
 
-## Useful links
+```
+├─ src
+│  ├─ main
+│  │  ├─ java/com/github/laplusijns     // Spring Boot 源碼，入口 Application.java
+│  │  ├─ frontend                        // React 前端界面 + Route + 多語
+│  │  │  ├─ index.html, themes, views
+│  │  │  ├─ @layout.tsx, @index.tsx, textClip.tsx
+│  │  │  │   - 主要畫面/元件（如圖片上傳、剪貼板）
+│  │  └─ resources                       // 設定檔、國際化、靜態資源
+│  └─ test                               // 測試
+├─ package.json, pom.xml                 // 前後端依賴/設定
+├─ vite.config.ts                        // 前端打包設定
+└─ README.md
+```
 
-- Read the documentation at [hilla.dev/docs](https://hilla.dev/docs/).
-- Ask questions on [Stack Overflow](https://stackoverflow.com/questions/tagged/vaadin) or join our [Forum](https://vaadin.com/forum).
-- Report issues, create pull requests in [GitHub](https://github.com/vaadin/hilla).
+---
+
+## 功能亮點速覽
+### 1. 圖片上傳
+- 支援選取/貼上圖片，所有圖片會出現預覽，點擊可放大彈窗顯示。
+- 圖片實際會傳送給後端 API 儲存（範例用法，請依實際需求擴充 Endpoints）。
+
+### 2. 文字快取/剪貼板
+- 可直接貼上多段文字（如大量暫存內容），支援複製/刪除/全部清除等功能。
+- 內容會即時同步顯示，支援單條與全部內容一鍵複製。
+
+### 3. 主題與語言切換
+- 側邊欄可切換「深/淺色」主題
+- 支援動態語系切換，並可用 localStorage 記憶
+
+---
+
+## 延伸閱讀 & 技術支援
+- Vaadin 文件：[https://vaadin.com/docs/latest/](https://vaadin.com/docs/latest/)
+- Vaadin 框架討論：[https://vaadin.com/forum](https://vaadin.com/forum)
+- 若有 Bugs / 需求，請直接於專案 Issues 或 PR
+
+---
+
+## 授權
+本專案依 [LICENSE.md](./LICENSE.md) 授權。
+
+---
+
+[English README](./README-en.md)

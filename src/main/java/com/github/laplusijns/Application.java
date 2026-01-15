@@ -1,9 +1,10 @@
 package com.github.laplusijns;
 
-import com.vaadin.flow.component.page.AppShellConfigurator;
-import com.vaadin.flow.theme.Theme;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+import com.vaadin.flow.component.page.AppShellConfigurator;
+import com.vaadin.flow.theme.Theme;
 
 /**
  * The entry point of the Spring Boot application.
@@ -12,11 +13,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * and some desktop browsers.
  *
  */
+@Theme("jocb")
 @SpringBootApplication
-@Theme(value = "jocb")
 public class Application implements AppShellConfigurator {
 
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         SpringApplication.run(Application.class, args);
     }
 }
