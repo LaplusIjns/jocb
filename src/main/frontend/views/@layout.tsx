@@ -44,7 +44,7 @@ export default function MainLayout() {
       // 預設選第一個（可選）
       const defaultLocale = items.find((i) => i.value === savedLocale)?.value ?? items[0].value;
       setSelectedLocale(defaultLocale);
-	  document.documentElement.lang = defaultLocale;
+      document.documentElement.lang = defaultLocale;
     });
   }, []);
 

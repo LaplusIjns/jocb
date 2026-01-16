@@ -2,16 +2,16 @@ package com.github.laplusijns;
 
 import org.jspecify.annotations.NonNull;
 
-public record TextCacheEvent(String type, @NonNull String text) {
+public record TextCacheEvent(EventType type, @NonNull String text) {
     public static TextCacheEvent add(final String text) {
-        return new TextCacheEvent("ADD", text);
+        return new TextCacheEvent(EventType.ADD, text);
     }
 
     public static TextCacheEvent delete(final String text) {
-        return new TextCacheEvent("DELETE", text);
+        return new TextCacheEvent(EventType.DELETE, text);
     }
 
     public static TextCacheEvent deleteAll() {
-        return new TextCacheEvent("DELETE_ALL", "");
+        return new TextCacheEvent(EventType.DELETE_ALL, "");
     }
 }

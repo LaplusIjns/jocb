@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import { EndpointService } from 'Frontend/generated/endpoints';
 import type ImageCacheEvent from 'Frontend/generated/com/github/laplusijns/ImageCacheEvent.js';
 import type FileObject from 'Frontend/generated/com/github/laplusijns/FileObject.js';
+import EventTpes from 'Frontend/generated/com/github/laplusijns/EventType';
 import { Button, Notification, Card } from '@vaadin/react-components';
 import { ActionOnLostSubscription } from '@vaadin/hilla-frontend';
 import { key, translate } from '@vaadin/hilla-react-i18n';
@@ -27,13 +28,13 @@ export default function ViewImagesView() {
     setFiles((prevFiles) => {
       let updatedFiles = [...prevFiles];
       receiveFiles.forEach((file) => {
-        if (file?.type === 'ADD') {
+        if (file?.type === EventTpes.ADD) {
           if (!updatedFiles.some((f) => f.uuid === file.uuid)) {
             updatedFiles.push(file);
           }
-        } else if (file?.type === 'DELETE') {
+        } else if (file?.type === EventTpes.DELETE) {
           updatedFiles = updatedFiles.filter((f) => f.uuid !== file.uuid);
-        } else if (file?.type === 'DELETE_ALL') {
+        } else if (file?.type === EventTpes.DELETE_ALL) {
           updatedFiles = [];
         }
       });

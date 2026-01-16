@@ -1,9 +1,10 @@
 import { ViewConfig } from '@vaadin/hilla-file-router/types.js';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { EndpointService } from 'Frontend/generated/endpoints';
 import { Button, Notification, Card, TextArea, Dialog } from '@vaadin/react-components';
 import { ActionOnLostSubscription } from '@vaadin/hilla-frontend';
 import type TextCacheEvent from 'Frontend/generated/com/github/laplusijns/TextCacheEvent.js';
+import EventTpes from 'Frontend/generated/com/github/laplusijns/EventType';
 import { key, translate } from '@vaadin/hilla-react-i18n';
 
 export const config: ViewConfig = {
@@ -58,9 +59,9 @@ export default function ViewImagesView() {
       .onNext((updates: TextCacheEvent[]) => {
         // update 物件範例: { type: 'add' | 'remove', text: '...' }
         updates.forEach((update: TextCacheEvent) => {
-          if (update.type === 'ADD') {
+          if (update.type === EventTpes.ADD) {
             setTexts((prevTexts) => (prevTexts.includes(update.text) ? prevTexts : [...prevTexts, update.text]));
-          } else if (update.type === 'DELETE') {
+          } else if (update.type === EventTpes.DELETE) {
             setTexts((prevTexts) => prevTexts.filter((t) => t !== update.text));
           }
         });
