@@ -15,10 +15,15 @@ import org.springframework.web.bind.annotation.RestController;
 public class BlobController {
 
     ImageCache imageCache;
+    long imageMaxAge;
 
-    public BlobController(final ImageCache imageCache) {
+    public BlobController(final ImageCache imageCache, final JocbProperties jocbProperties) {
         super();
         this.imageCache = imageCache;
+        this.imageMaxAge = jocbProperties
+                .getImageTimeout()
+                .getUnit()
+                .toSeconds(jocbProperties.getImageTimeout().getValue());
     }
 
     @GetMapping("/{uuid}")
@@ -34,7 +39,7 @@ public class BlobController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .header(HttpHeaders.CACHE_CONTROL, "max-age=1200, immutable")
+                .header(HttpHeaders.CACHE_CONTROL, "max-age="+imageMaxAge+", immutable")
                 .body(file.bytes());
     }
 }

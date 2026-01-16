@@ -7,7 +7,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
@@ -19,16 +18,21 @@ public class ImageCache {
     private final Sinks.Many<ImageCacheEvent> sink =
             Sinks.many().multicast().onBackpressureBuffer(Queues.SMALL_BUFFER_SIZE, false);
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final Cache<String, FileObject> fileCache;
 
-    private final Cache<String, FileObject> fileCache = Caffeine.newBuilder()
-            .expireAfterWrite(26, TimeUnit.HOURS)
-            .maximumSize(256) // 最大 1000 條記錄，可根據需求調整
-            .removalListener((key, value, cause) -> {
-                if (value != null && cause.wasEvicted()) {
-                    executor.submit(() -> sink.tryEmitNext(ImageCacheEvent.delete(key.toString())));
-                }
-            })
-            .build();
+    public ImageCache(final JocbProperties jocbProperties) {
+        this.fileCache = Caffeine.newBuilder()
+                .expireAfterWrite(
+                        jocbProperties.getImageTimeout().getValue(),
+                        jocbProperties.getImageTimeout().getUnit())
+                .maximumSize(jocbProperties.getImageTimeout().getMaxSize())
+                .removalListener((key, value, cause) -> {
+                    if (value != null && cause.wasEvicted()) {
+                        executor.submit(() -> sink.tryEmitNext(ImageCacheEvent.delete(key.toString())));
+                    }
+                })
+                .build();
+    }
 
     public void put(final FileObject fileObject) {
         fileCache.put(fileObject.uuid(), fileObject);

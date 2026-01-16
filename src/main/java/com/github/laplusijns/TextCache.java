@@ -7,7 +7,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
@@ -20,15 +19,21 @@ public class TextCache {
     private final Sinks.Many<TextCacheEvent> sink =
             Sinks.many().multicast().onBackpressureBuffer(Queues.SMALL_BUFFER_SIZE, false);
 
-    private final Cache<String, String> fileCache = Caffeine.newBuilder()
-            .expireAfterWrite(26, TimeUnit.HOURS)
-            .maximumSize(256)
-            .removalListener((key, value, cause) -> {
-                if (value != null && cause.wasEvicted()) {
-                    executor.submit(() -> sink.tryEmitNext(TextCacheEvent.delete(key.toString())));
-                }
-            })
-            .build();
+    private final Cache<String, String> fileCache;
+
+    public TextCache(final JocbProperties jocbProperties) {
+        this.fileCache = Caffeine.newBuilder()
+                .expireAfterWrite(
+                        jocbProperties.getTextTimeout().getValue(),
+                        jocbProperties.getTextTimeout().getUnit())
+                .maximumSize(jocbProperties.getTextTimeout().getMaxSize())
+                .removalListener((key, value, cause) -> {
+                    if (value != null && cause.wasEvicted()) {
+                        executor.submit(() -> sink.tryEmitNext(TextCacheEvent.delete(key.toString())));
+                    }
+                })
+                .build();
+    }
 
     public void put(final String text) {
         fileCache.put(text, text);
