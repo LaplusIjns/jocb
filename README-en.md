@@ -3,6 +3,7 @@
 ## Project Overview
 Jocb is a modern full-stack example built with Java Spring Boot (backend), Vaadin Hilla (type-safe API generator), and React (frontend). All uploaded images and text are kept in memory only (not persisted to disk or database): everything will be lost if the server restarts. This makes it suitable for temporary file storage, cross-device clipboard use, or as a practical end-to-end demo project. The app supports light/dark themes and multiple languages.
 
+[wiki for snapshot](https://github.com/LaplusIjns/jocb/wiki)
 ---
 
 ## Features
