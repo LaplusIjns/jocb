@@ -8,4 +8,9 @@ public record FileObject(
         String uuid,
         Integer width,
         Integer height,
-        String contentType) {}
+        String contentType,
+        Thumbnail thumbnail) {
+
+    static record Thumbnail(
+            Integer width, Integer height, @JsonIgnore byte[] bytes) {}
+}

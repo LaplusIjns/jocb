@@ -16,14 +16,18 @@ export const config: ViewConfig = {
   },
   title: key`page.viewImages.title`,
 };
+// avoid img too small break card
+const MIN_CARD_WIDTH = 200;
 
 export default function ViewImagesView() {
   const [files, setFiles] = useState<FileObject[]>([]);
   const imageBlobs = useRef<Map<string, Blob>>(new Map());
-  let contextPath: string;
-  EndpointService.contextPath().then((result) => {
-    contextPath = result;
-  });
+  const [contextPath, setContextPath] = useState('');
+
+  useEffect(() => {
+    EndpointService.contextPath().then(setContextPath);
+  }, []);
+
   const onMessageReceived = (receiveFiles: ImageCacheEvent[]) => {
     setFiles((prevFiles) => {
       let updatedFiles = [...prevFiles];
@@ -41,29 +45,65 @@ export default function ViewImagesView() {
       return updatedFiles;
     });
   };
+  const updateImageSize = (fileUuid: string, isThumbnail: boolean, width: number, height: number) => {
+    setFiles((prev) =>
+      prev.map((file) => {
+        if (file.uuid !== fileUuid) return file;
+
+        if (isThumbnail && file.thumbnail) {
+          if (file.thumbnail.width && file.thumbnail.height) return file;
+
+          return {
+            ...file,
+            thumbnail: {
+              ...file.thumbnail,
+              width,
+              height,
+            },
+          };
+        }
+
+        if (!file.width || !file.height) {
+          return {
+            ...file,
+            width,
+            height,
+          };
+        }
+
+        return file;
+      }),
+    );
+  };
+  const getOriginalBlob = async (uuid: string): Promise<Blob> => {
+    const cached = imageBlobs.current.get(uuid);
+    if (cached) return cached;
+
+    const res = await fetch(`${contextPath}/blob/${uuid}`);
+    if (!res.ok) throw new Error('下載原始圖片失敗');
+
+    const blob = await res.blob();
+    imageBlobs.current.set(uuid, blob);
+    return blob;
+  };
+
   useEffect(() => {
     const subscription = EndpointService.subscribeImageUpdates()
       .onNext((receiveFiles) => onMessageReceived(receiveFiles))
       .onSubscriptionLost(() => ActionOnLostSubscription.RESUBSCRIBE);
-    const fetchFiles = async () => {
-      try {
-        // 1. 先拿 UUID 陣列
-        const uuids: string[] = await EndpointService.downloadFileStrs();
-
-        // 2. 逐個下載檔案並立即更新
-        for (const uuid of uuids) {
+    EndpointService.downloadFileStrs()
+      .then((uuids: string[]) => {
+        uuids.forEach((uuid: string) => {
           EndpointService.downloadFile(uuid).then((file) => {
             if (file) {
               setFiles((prev) => [...prev, file]);
             }
           });
-        }
-      } catch (error) {
+        });
+      })
+      .catch((error) => {
         console.error(translate(key`notify.download.fail`), error);
-      }
-    };
-
-    fetchFiles();
+      });
     return () => {
       subscription.cancel();
     };
@@ -71,11 +111,7 @@ export default function ViewImagesView() {
 
   const copyImage = async (uuid: string) => {
     try {
-      const blob = imageBlobs.current.get(uuid);
-      const a = true;
-      if (!blob) {
-        throw new Error('找不到圖片 Blob');
-      }
+      const blob = await getOriginalBlob(uuid);
 
       let clipboardBlob = blob;
 
@@ -169,10 +205,11 @@ export default function ViewImagesView() {
     }
   };
   const deleteAllImages = async () => {
-    if (!confirm(translate(key`confirm.delete.all`))) return;
-    try {
-      // 建議後端提供此方法
-      EndpointService.deleteAllFiles().then(() => {
+    if (!confirm(translate(key`confirm.delete.all`))) {
+      return;
+    }
+    EndpointService.deleteAllFiles()
+      .then(() => {
         setFiles([]);
         imageBlobs.current.clear();
 
@@ -181,15 +218,15 @@ export default function ViewImagesView() {
           position: 'top-center',
           theme: 'success',
         });
+      })
+      .catch((err) => {
+        console.error('刪除全部失敗', err);
+        Notification.show(translate(key`notify.delete.all.fail`), {
+          duration: 2000,
+          position: 'top-center',
+          theme: 'error',
+        });
       });
-    } catch (err) {
-      console.error('刪除全部失敗', err);
-      Notification.show(translate(key`notify.delete.all.fail`), {
-        duration: 2000,
-        position: 'top-center',
-        theme: 'error',
-      });
-    }
   };
 
   return (
@@ -197,68 +234,85 @@ export default function ViewImagesView() {
       <Button className="w-full" theme="error primary" onClick={deleteAllImages}>
         {translate(key`btn.delete.all`)}
       </Button>
-      {files.map((file) => (
-        <Card
-          key={file.uuid}
-          theme="outlined"
-          style={{
-            maxWidth: '100%',
-            boxSizing: 'border-box',
-          }}>
-          <div
-            slot="title"
+      {files.map((file) => {
+        const displayFile = file.thumbnail || file; // 優先使用 thumbnail
+        const isThumbnail = !!file.thumbnail;
+        const rawWidth = displayFile.width ?? MIN_CARD_WIDTH;
+        const cardWidth = Math.max(rawWidth, MIN_CARD_WIDTH);
+        return (
+          <Card
+            key={file.uuid}
+            theme="outlined"
             style={{
+              width: 'fit-content',
               maxWidth: '100%',
-              wordBreak: 'break-all', // 長檔名可強制斷行
-              whiteSpace: 'normal', // 允許換行
-              overflowWrap: 'anywhere', // 現代瀏覽器推薦
             }}>
-            {file.originalFilename!}
-          </div>
-          <div slot="subtitle">{file.uuid}</div>
-          <img
-            src={'blob/' + file.uuid!}
-            alt={file.originalFilename}
-            width={file.width}
-            height={file.height}
-            style={{
-              maxWidth: '100%',
-              height: 'auto',
-              display: 'block',
-            }}
-            onLoad={(e) => {
-              const img = e.currentTarget;
+            <div
+              slot="title"
+              style={{
+                maxWidth: cardWidth,
+                wordBreak: 'break-all',
+                whiteSpace: 'normal',
+              }}>
+              {file.originalFilename!}
+            </div>
+            <div
+              slot="subtitle"
+              style={{
+                maxWidth: cardWidth,
+                wordBreak: 'break-all',
+                whiteSpace: 'normal',
+                fontSize: '0.8em',
+              }}>
+              {file.uuid}
+            </div>
+            <img
+              src={isThumbnail ? 'blob/thumbnail/' + file.uuid : 'blob/' + file.uuid}
+              alt={file.originalFilename}
+              width={displayFile.width ?? 200}
+              height={displayFile.height ?? 200}
+              onLoad={(e) => {
+                const img = e.currentTarget;
+                updateImageSize(file.uuid!, isThumbnail, img.naturalWidth, img.naturalHeight);
+                if (isThumbnail) return;
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
 
-              const canvas = document.createElement('canvas');
-              canvas.width = img.naturalWidth;
-              canvas.height = img.naturalHeight;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return;
 
-              const ctx = canvas.getContext('2d');
-              if (!ctx) return;
+                ctx.drawImage(img, 0, 0);
 
-              ctx.drawImage(img, 0, 0);
+                canvas.toBlob((blob) => {
+                  if (blob) {
+                    imageBlobs.current.set(file.uuid!, blob);
+                  }
+                }, file.contentType);
+              }}
+            />
 
-              canvas.toBlob((blob) => {
-                if (blob) {
-                  imageBlobs.current.set(file.uuid!, blob);
-                }
-              }, file.contentType); // 可依實際格式調整
-            }}
-          />
-          <Button slot="footer" theme="error" onClick={() => deleteImage(file.uuid!)}>
-            {translate(key`btn.copy.delete`)}
-          </Button>
-          <Button slot="footer" onClick={() => downloadImage(file.uuid!, file.originalFilename!)}>
-            {translate(key`btn.download.image`)}
-          </Button>
-          <Button slot="footer" onClick={() => copyImageUrl(file.uuid!)}>
-            {translate(key`btn.copy.url`)}
-          </Button>
-          <Button slot="footer" onClick={() => copyImage(file.uuid!)}>
-            {translate(key`btn.copy.image`)}
-          </Button>
-        </Card>
-      ))}
+            <div
+              slot="footer"
+              style={{
+                maxWidth: cardWidth,
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '0.25rem',
+              }}>
+              <Button theme="error" onClick={() => deleteImage(file.uuid!)}>
+                {translate(key`btn.copy.delete`)}
+              </Button>
+              <Button onClick={() => downloadImage(file.uuid!, file.originalFilename!)}>
+                {translate(key`btn.download.image`)}
+              </Button>
+              <br />
+              <Button onClick={() => copyImageUrl(file.uuid!)}>{translate(key`btn.copy.url`)}</Button>
+              <Button onClick={() => copyImage(file.uuid!)}>{translate(key`btn.copy.image`)}</Button>
+            </div>
+          </Card>
+        );
+      })}
     </div>
   );
 }

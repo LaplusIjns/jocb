@@ -5,7 +5,11 @@ import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.vaadin.hilla.Endpoint;
 import com.vaadin.hilla.EndpointSubscription;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
@@ -23,8 +27,14 @@ public class EndpointService {
     TextCache textCache;
     I18NProvider i18nProvider;
     private List<LocaleInfo> localeInfos;
+    Boolean enableThumbnail;
+    Integer sizeThumbnail;
 
-    public EndpointService(final ImageCache imageCache, final TextCache textCache, final I18NProvider i18nProvider) {
+    public EndpointService(
+            final ImageCache imageCache,
+            final TextCache textCache,
+            final I18NProvider i18nProvider,
+            final JocbProperties jocbProperties) {
         super();
         this.imageCache = imageCache;
         this.textCache = textCache;
@@ -32,23 +42,37 @@ public class EndpointService {
         this.localeInfos = i18nProvider.getProvidedLocales().stream()
                 .map(t -> new LocaleInfo(t.getDisplayLanguage(t), t.toString()))
                 .toList();
+        this.enableThumbnail = jocbProperties.getEnableThumbnail();
+        this.sizeThumbnail = jocbProperties.getSizeThumbnail();
     }
 
     @NonNull
     public String uploadFile(@NonNull final MultipartFile file) throws IOException {
 
         final String uuid = UUID.randomUUID().toString();
-        final BufferedImage image = ImageIO.read(file.getInputStream());
+        final String contentType = file.getContentType();
+        final byte[] fileBytes = file.getBytes();
+
         Integer width = null;
         Integer height = null;
+        FileObject.Thumbnail thumbnail = null;
+
+        final BufferedImage image = ImageIO.read(new ByteArrayInputStream(fileBytes));
+
         if (image != null) {
             width = image.getWidth();
             height = image.getHeight();
+            if (Boolean.TRUE.equals(enableThumbnail)) {
+                thumbnail = createThumbnail(image);
+            }
         }
+
         final FileObject fileObject =
-                new FileObject(file.getOriginalFilename(), file.getBytes(), uuid, width, height, file.getContentType());
+                new FileObject(file.getOriginalFilename(), fileBytes, uuid, width, height, contentType, thumbnail);
+
         imageCache.put(fileObject);
-        return file.getOriginalFilename() + '_' + file.getSize() + '_' + uuid;
+
+        return "%s_%d_%s".formatted(file.getOriginalFilename(), file.getSize(), uuid);
     }
 
     @NonNull
@@ -104,5 +128,29 @@ public class EndpointService {
     @NonNull
     public EndpointSubscription<@NonNull List<@NonNull TextCacheEvent>> subscribeTextUpdates() {
         return EndpointSubscription.of(textCache.sub(), () -> {});
+    }
+
+    private FileObject.Thumbnail createThumbnail(final BufferedImage original) throws IOException {
+        final int MAX_SIZE = this.sizeThumbnail;
+
+        final int originalWidth = original.getWidth();
+        final int originalHeight = original.getHeight();
+
+        final float scale = Math.min((float) MAX_SIZE / originalWidth, (float) MAX_SIZE / originalHeight);
+
+        final int thumbWidth = Math.round(originalWidth * scale);
+        final int thumbHeight = Math.round(originalHeight * scale);
+
+        final BufferedImage thumbnailImage = new BufferedImage(thumbWidth, thumbHeight, BufferedImage.TYPE_INT_RGB);
+
+        final Graphics2D g2d = thumbnailImage.createGraphics();
+        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        g2d.drawImage(original, 0, 0, thumbWidth, thumbHeight, null);
+        g2d.dispose();
+
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageIO.write(thumbnailImage, "jpg", baos);
+
+        return new FileObject.Thumbnail(thumbWidth, thumbHeight, baos.toByteArray());
     }
 }

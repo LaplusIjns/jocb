@@ -53,6 +53,14 @@ public class ImageCache {
         return fileCache.getIfPresent(uuid);
     }
 
+    public byte[] thumbnail(final String uuid) {
+        final FileObject fileObject = fileCache.getIfPresent(uuid);
+        if (fileObject != null && fileObject.thumbnail() != null) {
+            return fileObject.thumbnail().bytes();
+        }
+        return new byte[] {};
+    }
+
     public Collection<String> keys() {
         return fileCache.asMap().keySet();
     }

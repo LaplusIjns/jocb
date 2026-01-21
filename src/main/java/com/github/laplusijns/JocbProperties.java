@@ -10,6 +10,8 @@ public class JocbProperties {
 
     private TextTimeout textTimeout = new TextTimeout();
     private ImageTimeout imageTimeout = new ImageTimeout();
+    private Boolean enableThumbnail = Boolean.FALSE;
+    private Integer sizeThumbnail = 300;
 
     public TextTimeout getTextTimeout() {
         return textTimeout;
@@ -25,6 +27,22 @@ public class JocbProperties {
 
     public void setImageTimeout(final ImageTimeout imageTimeout) {
         this.imageTimeout = imageTimeout;
+    }
+
+    public Boolean getEnableThumbnail() {
+        return enableThumbnail;
+    }
+
+    public void setEnableThumbnail(final Boolean enableThumbnail) {
+        this.enableThumbnail = enableThumbnail;
+    }
+
+    public Integer getSizeThumbnail() {
+        return sizeThumbnail;
+    }
+
+    public void setSizeThumbnail(final Integer sizeThumbnail) {
+        this.sizeThumbnail = sizeThumbnail;
     }
 
     public static class TimeoutBase {

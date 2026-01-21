@@ -5,7 +5,7 @@ import org.jspecify.annotations.NonNull;
 public record ImageCacheEvent(
         EventType type, // ADD / DELETE
         @NonNull String uuid,
-        String filename,
+        String originalFilename,
         Integer width,
         Integer height,
         String contentType) {

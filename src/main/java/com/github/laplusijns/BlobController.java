@@ -39,7 +39,16 @@ public class BlobController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .header(HttpHeaders.CACHE_CONTROL, "max-age="+imageMaxAge+", immutable")
+                .header(HttpHeaders.CACHE_CONTROL, "max-age=" + imageMaxAge + ", immutable")
                 .body(file.bytes());
+    }
+
+    @GetMapping("/thumbnail/{uuid}")
+    public ResponseEntity<byte[]> downloadFile2(@PathVariable final String uuid) {
+        final byte[] bs = imageCache.thumbnail(uuid);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .header(HttpHeaders.CACHE_CONTROL, "max-age=" + imageMaxAge + ", immutable")
+                .body(bs);
     }
 }

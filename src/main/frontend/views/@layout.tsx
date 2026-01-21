@@ -86,7 +86,7 @@ export default function MainLayout() {
           </div>
           <SideNav onNavigate={({ path }) => navigate(path!)} location={location}>
             {createMenuItems().map(({ to, title, icon }) => (
-              <SideNavItem path={to.substring(1)} key={to}>
+              <SideNavItem path={to} key={to}>
                 {icon ? <Icon src={icon} slot="prefix" /> : <></>}
                 {i18n.translateDynamic(title)}
               </SideNavItem>
