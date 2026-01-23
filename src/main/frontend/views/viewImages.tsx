@@ -18,11 +18,33 @@ export const config: ViewConfig = {
 };
 // avoid img too small break card
 const MIN_CARD_WIDTH = 200;
+function useNow(interval = 1000) {
+  const [now, setNow] = useState(Date.now());
 
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), interval);
+    return () => clearInterval(t);
+  }, [interval]);
+
+  return now;
+}
+function formatRemain(ms: number) {
+  if (ms <= 0) return translate(key`text.expired`);
+
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+  if (minutes > 0) return `${minutes}m ${seconds}s`;
+  return `${seconds}s`;
+}
 export default function ViewImagesView() {
   const [files, setFiles] = useState<FileObject[]>([]);
   const imageBlobs = useRef<Map<string, Blob>>(new Map());
   const [contextPath, setContextPath] = useState('');
+  const now = useNow();
 
   useEffect(() => {
     EndpointService.contextPath().then(setContextPath);
@@ -291,7 +313,13 @@ export default function ViewImagesView() {
                 }, file.contentType);
               }}
             />
+            {(() => {
+              if (!file.expired) return null;
+              const remainMs = Math.max(file.expired - now, 0);
+              const remainText = formatRemain(remainMs);
 
+              return <div className="font-bold">{remainText}</div>;
+            })()}
             <div
               slot="footer"
               style={{

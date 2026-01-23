@@ -1,5 +1,7 @@
 package com.github.laplusijns;
 
+import com.github.laplusijns.JocbProperties.ImageTimeout;
+import com.github.laplusijns.JocbProperties.TextTimeout;
 import com.vaadin.flow.i18n.I18NProvider;
 import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
@@ -29,6 +31,8 @@ public class EndpointService {
     private List<LocaleInfo> localeInfos;
     Boolean enableThumbnail;
     Integer sizeThumbnail;
+    TextTimeout textTimeout;
+    ImageTimeout imageTimeout;
 
     public EndpointService(
             final ImageCache imageCache,
@@ -44,6 +48,8 @@ public class EndpointService {
                 .toList();
         this.enableThumbnail = jocbProperties.getEnableThumbnail();
         this.sizeThumbnail = jocbProperties.getSizeThumbnail();
+        this.textTimeout = jocbProperties.getTextTimeout();
+        this.imageTimeout = jocbProperties.getImageTimeout();
     }
 
     @NonNull
@@ -67,8 +73,10 @@ public class EndpointService {
             }
         }
 
-        final FileObject fileObject =
-                new FileObject(file.getOriginalFilename(), fileBytes, uuid, width, height, contentType, thumbnail);
+        final long expired = System.currentTimeMillis() + imageTimeout.getUnit().toMillis(imageTimeout.getValue());
+
+        final FileObject fileObject = new FileObject(
+                expired, file.getOriginalFilename(), fileBytes, uuid, width, height, contentType, thumbnail);
 
         imageCache.put(fileObject);
 
@@ -98,8 +106,12 @@ public class EndpointService {
         imageCache.deleteAllFiles();
     }
 
-    public void uploadText(@NonNull final String text) {
-        textCache.put(text);
+    @NonNull
+    public TextObject uploadText(@NonNull final String text) {
+        final long expired = System.currentTimeMillis() + textTimeout.getUnit().toMillis(textTimeout.getValue());
+        final TextObject textObject = new TextObject(expired, text);
+        textCache.put(textObject);
+        return textObject;
     }
 
     public void deleteText(@NonNull final String text) {
@@ -111,7 +123,7 @@ public class EndpointService {
     }
 
     @NonNull
-    public Collection<@NonNull String> downloadTexts() {
+    public Collection<@NonNull TextObject> downloadTexts() {
         return textCache.keys();
     }
 

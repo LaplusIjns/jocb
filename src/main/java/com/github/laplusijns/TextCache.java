@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
@@ -19,7 +20,7 @@ public class TextCache {
     private final Sinks.Many<TextCacheEvent> sink =
             Sinks.many().multicast().onBackpressureBuffer(Queues.SMALL_BUFFER_SIZE, false);
 
-    private final Cache<String, String> fileCache;
+    private final Cache<String, TextObject> fileCache;
 
     public TextCache(final JocbProperties jocbProperties) {
         this.fileCache = Caffeine.newBuilder()
@@ -35,9 +36,9 @@ public class TextCache {
                 .build();
     }
 
-    public void put(final String text) {
-        fileCache.put(text, text);
-        executor.submit(() -> sink.tryEmitNext(TextCacheEvent.add(text)));
+    public void put(final TextObject textObject) {
+        fileCache.put(textObject.text(), textObject);
+        executor.submit(() -> sink.tryEmitNext(TextCacheEvent.add(textObject)));
     }
 
     public void delete(final String text) {
@@ -45,8 +46,8 @@ public class TextCache {
         executor.submit(() -> sink.tryEmitNext(TextCacheEvent.delete(text)));
     }
 
-    public Collection<String> keys() {
-        return fileCache.asMap().keySet();
+    public Collection<@NonNull TextObject> keys() {
+        return fileCache.asMap().values();
     }
 
     public Flux<List<TextCacheEvent>> sub() {
