@@ -8,7 +8,7 @@ import {
   type UploadRequestEvent,
   type UploadElement,
 } from '@vaadin/react-components';
-import { EndpointService, OcrEndpointService } from 'Frontend/generated/endpoints';
+import { OcrEndpointService } from 'Frontend/generated/endpoints';
 import OcrResponse from 'Frontend/generated/com/github/laplusijns/ocr/OcrResponse';
 import LabelAndValue from 'Frontend/generated/com/github/laplusijns/LabelAndValue';
 import Result from 'Frontend/generated/com/github/laplusijns/ocr/OcrResponse/Result';
@@ -24,7 +24,32 @@ export default function OcrDemoSimple() {
   const [texts, setTexts] = useState<LabelAndValue[]>([]); // 後端文字陣列
   const [result, setResult] = useState<string>(); // 後端文字陣列
   const uploadRef = useRef<UploadElement>(null);
+  const subscriptionRef = useRef<any>(null);
+  const jsessionidRef = useRef<any>(null);
 
+  useEffect(() => {
+    const jessionid = crypto.randomUUID();
+    jsessionidRef.current = jessionid;
+    subscriptionRef.current = OcrEndpointService.ocrResponseSubscription(jessionid).onNext((res: OcrResponse) => {
+      if (res.result === Result.SUCCESS) {
+        Notification.show(translate(key`notify.imageocr.success`), {
+          duration: 2000,
+          position: 'top-center',
+        });
+        setResult(res.response);
+      } else if (res.result === Result.ERROR) {
+        Notification.show(res.response, {
+          duration: 2000,
+          position: 'top-center',
+          theme: 'error',
+        });
+      }
+    });
+
+    return () => {
+      subscriptionRef.current?.cancel();
+    };
+  }, []);
   useEffect(() => {
     OcrEndpointService.lvs()
       .then((uuids: LabelAndValue[]) => {
@@ -40,71 +65,14 @@ export default function OcrDemoSimple() {
     // 取得選擇值
     const newValue = event.target.value;
 
-    OcrEndpointService.ocrImageCache(newValue).then((res: OcrResponse) => {
-      if (res.result === Result.SUCCESS) {
-        Notification.show(translate(key`notify.imageocr.success`), {
-          duration: 2000,
-          position: 'top-center',
-        });
-        setResult(res.response);
-      } else if (res.result === Result.ERROR) {
-        Notification.show(res.response, {
-          duration: 2000,
-          position: 'top-center',
-          theme: 'error',
-        });
-      }
-    });
+    OcrEndpointService.ocrImageCache(newValue, jsessionidRef.current);
   };
   const handleUploadRequest = async (e: UploadRequestEvent) => {
     e.preventDefault();
     const uploadRef = e.target as UploadElement;
-    OcrEndpointService.ocrImageFile(e.detail.file)
-      .then((res: OcrResponse) => {
-        if (res.result === Result.SUCCESS) {
-          Notification.show(translate(key`notify.imageocr.success`), {
-            duration: 2000,
-            position: 'top-center',
-          });
-          setResult(res.response);
-        } else if (res.result === Result.ERROR) {
-          Notification.show(res.response, {
-            duration: 2000,
-            position: 'top-center',
-            theme: 'error',
-          });
-        }
-        uploadRef.files = uploadRef.files.map((file) => {
-          file.status = '';
-          file.complete = true;
-          return file;
-        });
-      })
-      .catch((err) => {
-        let message = translate(key`status.unknown`);
-        if (typeof err === 'object' && err !== null && 'response' in err) {
-          const response = err.response;
-          const status = response?.status;
-
-          if (status === 413) {
-            message = translate(key`file.upload.tooLarge`);
-          } else {
-            message = translate(key`status.fail`);
-          }
-
-          // 一般 JS Error
-        } else if (err instanceof Error) {
-          message = err.message;
-        }
-        Notification.show(message, {
-          position: 'middle',
-          duration: 1500,
-          theme: 'error',
-        });
-      })
-      .finally(() => {
-        uploadRef.files = [];
-      });
+    OcrEndpointService.ocrImageFile(e.detail.file, jsessionidRef.current).finally(() => {
+      uploadRef.files = [];
+    });
   };
   const handleCopy = async () => {
     if (!result) {

@@ -1,5 +1,7 @@
 package com.github.laplusijns;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
@@ -34,5 +36,10 @@ public class JocbLLMConfig {
                 .defaultOptions(openAiChatOptions)
                 .openAiApi(openAiApi)
                 .build();
+    }
+
+    @Bean(destroyMethod = "close", name = "ocrExecutor")
+    ExecutorService ocrExecutor() {
+        return Executors.newVirtualThreadPerTaskExecutor();
     }
 }
