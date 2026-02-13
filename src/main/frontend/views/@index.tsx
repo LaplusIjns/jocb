@@ -64,42 +64,42 @@ export default function UploadView() {
   };
   const handleUploadRequest = async (e: UploadRequestEvent) => {
     e.preventDefault();
-
     const uploadRef = e.target as UploadElement;
-    try {
-      const fileId = await EndpointService.uploadFile(e.detail.file);
-      uploadRef.files = uploadRef.files.map((file) => {
-        file.status = '';
-        file.complete = true;
-        return file;
-      });
-      Notification.show(translate(key`file.upload.received`) + `: ${fileId}`, {
-        duration: 2000,
-        theme: 'success',
-        position: 'top-center',
-      });
-    } catch (err: unknown) {
-      let message = translate(key`status.unknown`);
-      if (typeof err === 'object' && err !== null && 'response' in err) {
-        const response = (err as any).response;
-        const status = response?.status;
+    EndpointService.uploadFile(e.detail.file)
+      .then((fileId) => {
+        uploadRef.files = uploadRef.files.map((file) => {
+          file.status = '';
+          file.complete = true;
+          return file;
+        });
+        Notification.show(translate(key`file.upload.received`) + `: ${fileId}`, {
+          duration: 2000,
+          theme: 'success',
+          position: 'top-center',
+        });
+      })
+      .catch((err) => {
+        let message = translate(key`status.unknown`);
+        if (typeof err === 'object' && err !== null && 'response' in err) {
+          const response = err.response;
+          const status = response?.status;
 
-        if (status === 413) {
-          message = translate(key`file.upload.tooLarge`);
-        } else {
-          message = translate(key`status.fail`);
+          if (status === 413) {
+            message = translate(key`file.upload.tooLarge`);
+          } else {
+            message = translate(key`status.fail`);
+          }
+
+          // 一般 JS Error
+        } else if (err instanceof Error) {
+          message = err.message;
         }
-
-        // 一般 JS Error
-      } else if (err instanceof Error) {
-        message = err.message;
-      }
-      Notification.show(message, {
-        position: 'middle',
-        duration: 1500,
-        theme: 'error',
+        Notification.show(message, {
+          position: 'middle',
+          duration: 1500,
+          theme: 'error',
+        });
       });
-    }
   };
 
   return (

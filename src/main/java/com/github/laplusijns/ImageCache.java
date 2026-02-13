@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
@@ -32,6 +33,10 @@ public class ImageCache {
                     }
                 })
                 .build();
+    }
+
+    public Collection<@NonNull FileObject> all() {
+        return fileCache.asMap().values();
     }
 
     public void put(final FileObject fileObject) {
