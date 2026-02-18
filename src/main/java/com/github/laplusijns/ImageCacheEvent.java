@@ -2,6 +2,8 @@ package com.github.laplusijns;
 
 import org.jspecify.annotations.NonNull;
 
+import com.github.laplusijns.FileObject.Thumbnail;
+
 public record ImageCacheEvent(
         Long expired,
         EventType type, // ADD / DELETE
@@ -9,17 +11,19 @@ public record ImageCacheEvent(
         String originalFilename,
         Integer width,
         Integer height,
-        String contentType) {
+        String contentType,
+        Thumbnail thumbnail
+		) {
     public static ImageCacheEvent add(final FileObject f) {
         return new ImageCacheEvent(
-                f.expired(), EventType.ADD, f.uuid(), f.originalFilename(), f.width(), f.height(), f.contentType());
+                f.expired(), EventType.ADD, f.uuid(), f.originalFilename(), f.width(), f.height(), f.contentType(),f.thumbnail());
     }
 
     public static ImageCacheEvent delete(final String uuid) {
-        return new ImageCacheEvent(null, EventType.DELETE, uuid, null, null, null, null);
+        return new ImageCacheEvent(null, EventType.DELETE, uuid, null, null, null, null,null);
     }
 
     public static ImageCacheEvent deleteAll() {
-        return new ImageCacheEvent(null, EventType.DELETE_ALL, "", null, null, null, null);
+        return new ImageCacheEvent(null, EventType.DELETE_ALL, "", null, null, null, null,null);
     }
 }
