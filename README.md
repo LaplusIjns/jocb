@@ -3,6 +3,9 @@
 ## 專案簡介
 Jocb 是一套基於 Java Spring Boot (後端) + Vaadin Hilla (全端 API 生成) + React (前端) 的現代化應用專案，提供「圖片上傳」和「文字剪貼板」管理功能。所有上傳圖片及文字暫存內容，僅存在記憶體中（未寫入硬碟或資料庫），重新啟動服務即會清除。適合用於臨時檔案暫存、跨平台剪貼板用途，或作為全端範例專案參考使用。支援主題深/淺色切換與多語系（可依需求擴充）。
 
+<img width="1920" height="484" alt="image" src="https://github.com/user-attachments/assets/74d97fa0-b654-4180-b25f-cd32541c6e38" />
+
+
 [wiki 查看圖片](https://github.com/LaplusIjns/jocb/wiki)
 ---
 
@@ -81,12 +84,6 @@ Jocb 是一套基於 Java Spring Boot (後端) + Vaadin Hilla (全端 API 生成
 - Vaadin 文件：[https://vaadin.com/docs/latest/](https://vaadin.com/docs/latest/)
 - Vaadin 框架討論：[https://vaadin.com/forum](https://vaadin.com/forum)
 - 若有 Bugs / 需求，請直接於專案 Issues 或 PR
-
----
-
-## 授權
-本專案依 [LICENSE.md](./LICENSE.md) 授權。
-
 ---
 
 [English README](./README-en.md)
